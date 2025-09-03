@@ -1,5 +1,5 @@
 /**
- * @acme/pubsubx - Consumer Wrapper
+ * @valianx/pubsub-lite - Consumer Wrapper
  */
 
 import type { PubSub, Subscription, Message } from '@google-cloud/pubsub';
@@ -88,7 +88,7 @@ export function createConsumer(
     } else {
       // Fallback to in-memory store with warning
       logger.warn(
-        '@acme/pubsubx: No Redis config provided for idempotency. Using InMemoryStore (not recommended for production).'
+        '@valianx/pubsub-lite: No Redis config provided for idempotency. Using InMemoryStore (not recommended for production).'
       );
       idempotencyStore = new InMemoryIdempotencyStore();
     }
@@ -117,7 +117,7 @@ export function createConsumer(
           try {
             await hooks.onMessageReceived(message);
           } catch (hookError) {
-            logger.warn('@acme/pubsubx: onMessageReceived hook failed:', hookError);
+            logger.warn('@valianx/pubsub-lite: onMessageReceived hook failed:', hookError);
           }
         }
 
@@ -144,7 +144,7 @@ export function createConsumer(
                 try {
                   await hooks.onIdempotencyCheck(idempotencyKey, alreadyProcessed);
                 } catch (hookError) {
-                  logger.warn('@acme/pubsubx: onIdempotencyCheck hook failed:', hookError);
+                  logger.warn('@valianx/pubsub-lite: onIdempotencyCheck hook failed:', hookError);
                 }
               }
               
@@ -157,7 +157,7 @@ export function createConsumer(
                   try {
                     await hooks.onMessageAck(message);
                   } catch (hookError) {
-                    logger.warn('@acme/pubsubx: onMessageAck hook failed:', hookError);
+                    logger.warn('@valianx/pubsub-lite: onMessageAck hook failed:', hookError);
                   }
                 }
                 return;
@@ -166,7 +166,7 @@ export function createConsumer(
               // Mark as being processed
               await idempotencyStore.set(idempotencyKey);
             } catch (idempotencyError) {
-              logger.error('@acme/pubsubx: Idempotency store error, processing message anyway:', idempotencyError);
+              logger.error('@valianx/pubsub-lite: Idempotency store error, processing message anyway:', idempotencyError);
               // Continue processing even if idempotency fails
             }
           }
@@ -176,7 +176,7 @@ export function createConsumer(
             try {
               await hooks.onMessageStart(message);
             } catch (hookError) {
-              logger.warn('@acme/pubsubx: onMessageStart hook failed:', hookError);
+              logger.warn('@valianx/pubsub-lite: onMessageStart hook failed:', hookError);
             }
           }
 
@@ -192,7 +192,7 @@ export function createConsumer(
               try {
                 await hooks.onMessageAck(message);
               } catch (hookError) {
-                logger.warn('@acme/pubsubx: onMessageAck hook failed:', hookError);
+                logger.warn('@valianx/pubsub-lite: onMessageAck hook failed:', hookError);
               }
             }
             return;
@@ -203,7 +203,7 @@ export function createConsumer(
             try {
               await hooks.onMessageSuccess(message, data);
             } catch (hookError) {
-              logger.warn('@acme/pubsubx: onMessageSuccess hook failed:', hookError);
+              logger.warn('@valianx/pubsub-lite: onMessageSuccess hook failed:', hookError);
             }
           }
 
@@ -216,7 +216,7 @@ export function createConsumer(
             try {
               await hooks.onMessageError(message, err);
             } catch (hookError) {
-              logger.warn('@acme/pubsubx: onMessageError hook failed:', hookError);
+              logger.warn('@valianx/pubsub-lite: onMessageError hook failed:', hookError);
             }
           }
           
@@ -235,7 +235,7 @@ export function createConsumer(
             try {
               await hooks.onMessageNack(message);
             } catch (hookError) {
-              logger.warn('@acme/pubsubx: onMessageNack hook failed:', hookError);
+              logger.warn('@valianx/pubsub-lite: onMessageNack hook failed:', hookError);
             }
           }
         }

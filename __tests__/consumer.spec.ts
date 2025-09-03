@@ -1,5 +1,5 @@
 /**
- * @acme/pubsubx - Consumer Tests (Simplified)
+ * @valianx/pubsub-lite - Consumer Tests (Simplified)
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';

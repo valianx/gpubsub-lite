@@ -1,5 +1,5 @@
 /**
- * @acme/pubsubx - Enhanced Publisher Wrapper with Retry and Observability
+ * @valianx/pubsub-lite - Enhanced Publisher Wrapper with Retry and Observability
  */
 
 import type { PubSub, Topic } from '@google-cloud/pubsub';
@@ -118,7 +118,7 @@ export function createPublisher(
     try {
       await hookFn();
     } catch (hookError) {
-      logger.warn(`@acme/pubsubx: Publisher hook '${context}' failed:`, hookError);
+      logger.warn(`@valianx/pubsub-lite: Publisher hook '${context}' failed:`, hookError);
     }
   }
 

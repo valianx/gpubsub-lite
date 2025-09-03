@@ -1,0 +1,23 @@
+{
+    "name": "@valianx/pubsub-lite-basic-example",
+    "version": "1.0.0",
+    "description": "Basic publisher/consumer example for @valianx/pubsub-lite",
+    "main": "publisher.js",
+    "scripts": {
+        "publisher": "node publisher.js",
+        "consumer": "node consumer.js",
+        "start": "npm run consumer"
+    },
+    "dependencies": {
+        "@valianx/pubsub-lite": "file:../..",
+        "@google-cloud/pubsub": "^4.0.0"
+    },
+    "keywords": [
+        "pubsub",
+        "google-cloud",
+        "messaging",
+        "example"
+    ],
+    "author": "Your Name",
+    "license": "MIT"
+}

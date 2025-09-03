@@ -1,9 +1,9 @@
 /**
- * @acme/pubsubx - TypeScript wrapper for Google Cloud Pub/Sub with Redis-backed idempotency
+ * @valianx/pubsub-lite - TypeScript wrapper for Google Cloud Pub/Sub with Redis-backed idempotency
  * 
  * @example
  * ```typescript
- * import { createPubSubClient, createPublisher, createConsumer } from '@acme/pubsubx';
+ * import { createPubSubClient, createPublisher, createConsumer } from '@valianx/pubsub-lite';
  * 
  * const client = createPubSubClient({ projectId: 'my-project' });
  * const publisher = createPublisher(client, 'my-topic');

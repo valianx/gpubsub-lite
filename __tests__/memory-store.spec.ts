@@ -1,5 +1,5 @@
 /**
- * @acme/pubsubx - InMemoryIdempotencyStore Tests
+ * @valianx/pubsub-lite - InMemoryIdempotencyStore Tests
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';

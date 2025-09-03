@@ -1,5 +1,5 @@
 /**
- * @acme/pubsubx - Client Tests
+ * @valianx/pubsub-lite - Client Tests
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';

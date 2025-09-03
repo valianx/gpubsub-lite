@@ -16,6 +16,6 @@ export default defineConfig({
     'redis'
   ],
   banner: {
-    js: '// @acme/pubsubx - TypeScript wrapper for Google Cloud Pub/Sub'
+    js: '// @valianx/pubsub-lite - TypeScript wrapper for Google Cloud Pub/Sub'
   }
 });

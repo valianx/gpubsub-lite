@@ -1,0 +1,24 @@
+{
+    "name": "@valianx/pubsub-lite-redis-idempotency-example",
+    "version": "1.0.0",
+    "description": "Redis idempotency example for @valianx/pubsub-lite",
+    "private": true,
+    "scripts": {
+        "start": "node basic-example.js",
+        "consumer": "node payment-processor.js",
+        "publisher": "node publisher.js",
+        "monitor": "node monitoring.js",
+        "cluster": "node cluster-example.js",
+        "performance": "node performance-test.js",
+        "setup-redis": "docker-compose up -d",
+        "stop-redis": "docker-compose down",
+        "test": "node test-scenarios.js"
+    },
+    "dependencies": {
+        "@valianx/pubsub-lite": "workspace:*",
+        "ioredis": "^5.3.0"
+    },
+    "devDependencies": {
+        "eslint": "^8.42.0"
+    }
+}

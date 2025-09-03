@@ -1,0 +1,23 @@
+{
+    "name": "@valianx/pubsub-lite-dlq-example",
+    "version": "1.0.0",
+    "description": "Dead Letter Queue example for @valianx/pubsub-lite",
+    "private": true,
+    "scripts": {
+        "publisher": "node publisher.js",
+        "consumer": "node consumer.js",
+        "dlq-processor": "node dlq-processor.js",
+        "dlq-analyzer": "node dlq-analyzer.js",
+        "message-recovery": "node message-recovery.js",
+        "setup": "node setup.js",
+        "start": "concurrently \"npm run consumer\" \"npm run dlq-processor\"",
+        "test": "node test-scenario.js"
+    },
+    "dependencies": {
+        "@valianx/pubsub-lite": "workspace:*",
+        "concurrently": "^8.2.0"
+    },
+    "devDependencies": {
+        "eslint": "^8.42.0"
+    }
+}

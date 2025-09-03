@@ -1,5 +1,5 @@
 /**
- * @acme/pubsubx - In-Memory Idempotency Store (for tests/POC)
+ * @valianx/pubsub-lite - In-Memory Idempotency Store (for tests/POC)
  */
 
 import type { IdempotencyStore } from '../types.js';

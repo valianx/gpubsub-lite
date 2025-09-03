@@ -1,5 +1,5 @@
 /**
- * @acme/pubsubx - Type definitions
+ * @valianx/pubsub-lite - Type definitions
  * 
  * Comprehensive type definitions following SOLID principles and ensuring type safety.
  * All interfaces are designed for extensibility and maintainability.

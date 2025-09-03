@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  redis-node1:
+    image: redis:7-alpine
+    container_name: redis-node1
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis1_data:/data
+    command: >
+      redis-server
+      --appendonly yes
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --port 6379
+
+  redis-node2:
+    image: redis:7-alpine
+    container_name: redis-node2
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis2_data:/data
+    command: >
+      redis-server
+      --appendonly yes
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --port 6379
+
+  redis-node3:
+    image: redis:7-alpine
+    container_name: redis-node3
+    ports:
+      - "6381:6379"
+    volumes:
+      - redis3_data:/data
+    command: >
+      redis-server
+      --appendonly yes
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --port 6379
+
+  redis-single:
+    image: redis:7-alpine
+    container_name: redis-single
+    ports:
+      - "6382:6379"
+    volumes:
+      - redis_single_data:/data
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+
+volumes:
+  redis1_data:
+  redis2_data:
+  redis3_data:
+  redis_single_data:

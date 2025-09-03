@@ -1,5 +1,5 @@
 /**
- * @acme/pubsubx - Redis Idempotency Store (production)
+ * @valianx/pubsub-lite - Redis Idempotency Store (production)
  */
 
 import Redis from 'ioredis';
