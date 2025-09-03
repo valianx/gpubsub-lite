@@ -16,7 +16,11 @@ describe('createPublisher', () => {
     
     mockTopic = {
       publishMessage: mockPublishMessage,
+      flush: vi.fn().mockResolvedValue(undefined),
       name: 'projects/test-project/topics/test-topic',
+      publisher: {
+        settings: {}
+      }
     } as any;
 
     mockClient = {
@@ -28,10 +32,11 @@ describe('createPublisher', () => {
     it('should create a publisher with minimal configuration', () => {
       const publisher = createPublisher(mockClient, 'test-topic');
 
-      expect(mockClient.topic).toHaveBeenCalledWith('test-topic', {});
+      expect(mockClient.topic).toHaveBeenCalledWith('test-topic');
       expect(publisher).toBeDefined();
       expect(typeof publisher.publish).toBe('function');
       expect(typeof publisher.getTopic).toBe('function');
+      expect(typeof publisher.flush).toBe('function');
     });
 
     it('should create a publisher with default attributes', () => {
@@ -44,7 +49,7 @@ describe('createPublisher', () => {
 
       const publisher = createPublisher(mockClient, 'test-topic', options);
 
-      expect(mockClient.topic).toHaveBeenCalledWith('test-topic', {});
+      expect(mockClient.topic).toHaveBeenCalledWith('test-topic');
       expect(publisher).toBeDefined();
     });
 
@@ -243,6 +248,222 @@ describe('createPublisher', () => {
       data.circular = data;
 
       await expect(publisher.publish(data)).rejects.toThrow();
+    });
+  });
+
+  describe('Phase 3 Enhancements', () => {
+    describe('Retry Logic', () => {
+      it('should retry failed publishes with exponential backoff', async () => {
+        // Setup mock to fail twice then succeed
+        let callCount = 0;
+        mockPublishMessage.mockImplementation(() => {
+          callCount++;
+          if (callCount <= 2) {
+            throw new Error('Temporary failure');
+          }
+          return Promise.resolve('message-id-123');
+        });
+
+        const publisher = createPublisher(mockClient, 'test-topic', {
+          retry: {
+            maxAttempts: 3,
+            initialDelayMs: 10, // Small delay for testing
+            maxDelayMs: 100
+          }
+        });
+
+        const data = { message: 'Hello World!' };
+        const messageId = await publisher.publish(data);
+
+        expect(messageId).toBe('message-id-123');
+        expect(mockPublishMessage).toHaveBeenCalledTimes(3);
+      });
+
+      it('should respect maxAttempts and throw after retries exhausted', async () => {
+        // Setup mock to always fail
+        mockPublishMessage.mockRejectedValue(new Error('Persistent failure'));
+
+        const publisher = createPublisher(mockClient, 'test-topic', {
+          retry: {
+            maxAttempts: 2,
+            initialDelayMs: 10
+          }
+        });
+
+        const data = { message: 'Hello World!' };
+        
+        await expect(publisher.publish(data)).rejects.toThrow('Persistent failure');
+        expect(mockPublishMessage).toHaveBeenCalledTimes(2);
+      });
+
+      it('should work without retry configuration (default behavior)', async () => {
+        mockPublishMessage.mockRejectedValue(new Error('Single failure'));
+
+        const publisher = createPublisher(mockClient, 'test-topic');
+
+        await expect(publisher.publish({ message: 'test' })).rejects.toThrow('Single failure');
+        expect(mockPublishMessage).toHaveBeenCalledTimes(5); // Default maxAttempts
+      });
+    });
+
+    describe('Publisher Hooks', () => {
+      it('should call onPublishStart and onPublishSuccess hooks', async () => {
+        const onPublishStart = vi.fn();
+        const onPublishSuccess = vi.fn();
+
+        const publisher = createPublisher(mockClient, 'test-topic', {
+          hooks: {
+            onPublishStart,
+            onPublishSuccess
+          }
+        });
+
+        const data = { message: 'Hello World!' };
+        const messageId = await publisher.publish(data, { attr: 'value' });
+
+        expect(onPublishStart).toHaveBeenCalledWith(data, { attr: 'value' });
+        expect(onPublishSuccess).toHaveBeenCalledWith(messageId, data);
+      });
+
+      it('should call retry and error hooks on failures', async () => {
+        let callCount = 0;
+        mockPublishMessage.mockImplementation(() => {
+          callCount++;
+          if (callCount <= 1) {
+            throw new Error('Temporary failure');
+          }
+          return Promise.resolve('message-id-123');
+        });
+
+        const onPublishError = vi.fn();
+        const onPublishRetry = vi.fn();
+
+        const publisher = createPublisher(mockClient, 'test-topic', {
+          retry: {
+            maxAttempts: 2,
+            initialDelayMs: 10
+          },
+          hooks: {
+            onPublishError,
+            onPublishRetry
+          }
+        });
+
+        const data = { message: 'test' };
+        await publisher.publish(data);
+
+        expect(onPublishError).toHaveBeenCalledWith(
+          expect.any(Error),
+          data,
+          1
+        );
+        expect(onPublishRetry).toHaveBeenCalledWith(
+          expect.any(Error),
+          data,
+          1,
+          expect.any(Number)
+        );
+      });
+
+      it('should call onPublishFailure when all retries are exhausted', async () => {
+        mockPublishMessage.mockRejectedValue(new Error('Persistent failure'));
+
+        const onPublishFailure = vi.fn();
+
+        const publisher = createPublisher(mockClient, 'test-topic', {
+          retry: {
+            maxAttempts: 2,
+            initialDelayMs: 10
+          },
+          hooks: {
+            onPublishFailure
+          }
+        });
+
+        const data = { message: 'test' };
+        
+        await expect(publisher.publish(data)).rejects.toThrow('Persistent failure');
+        
+        expect(onPublishFailure).toHaveBeenCalledWith(
+          expect.any(Error),
+          data,
+          2
+        );
+      });
+
+      it('should handle hook errors gracefully without affecting publish', async () => {
+        // Spy on console.warn to capture hook error logs
+        const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        
+        const faultyHook = vi.fn().mockImplementation(() => {
+          throw new Error('Hook failed');
+        });
+
+        const publisher = createPublisher(mockClient, 'test-topic', {
+          hooks: {
+            onPublishStart: faultyHook,
+            onPublishSuccess: faultyHook
+          }
+        });
+
+        const data = { message: 'test' };
+        const messageId = await publisher.publish(data);
+
+        expect(messageId).toBe('message-id-123');
+        expect(faultyHook).toHaveBeenCalledTimes(2);
+        
+        // Verify that hook errors were logged
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+          expect.stringContaining('Publisher hook'),
+          expect.any(Error)
+        );
+        
+        // Restore console.warn
+        consoleWarnSpy.mockRestore();
+      });
+    });
+
+    describe('Batching Configuration', () => {
+      it('should configure batching settings when provided', () => {
+        const publisher = createPublisher(mockClient, 'test-topic', {
+          batching: {
+            maxMessages: 50,
+            maxBytes: 512 * 1024
+          }
+        });
+
+        expect(mockTopic.publisher.settings.batching).toEqual({
+          maxMessages: 50,
+          maxBytes: 512 * 1024
+        });
+      });
+
+      it('should use default batching values when not specified', () => {
+        const publisher = createPublisher(mockClient, 'test-topic', {
+          batching: {}
+        });
+
+        expect(mockTopic.publisher.settings.batching).toEqual({
+          maxMessages: 100,
+          maxBytes: 1024 * 1024
+        });
+      });
+
+      it('should not configure batching when not provided', () => {
+        const publisher = createPublisher(mockClient, 'test-topic');
+
+        expect(mockTopic.publisher.settings.batching).toBeUndefined();
+      });
+    });
+
+    describe('Flush Method', () => {
+      it('should flush pending messages', async () => {
+        const publisher = createPublisher(mockClient, 'test-topic');
+
+        await publisher.flush();
+
+        expect(mockTopic.flush).toHaveBeenCalled();
+      });
     });
   });
 });

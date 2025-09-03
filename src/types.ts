@@ -31,15 +31,53 @@ export interface PubSubClientOptions extends Partial<ClientConfig> {
 /**
  * Publisher-specific configuration options
  * 
- * Designed for performance and reliability with proper error handling.
+ * Enhanced configuration for reliable message publishing with retry logic and observability.
  */
 export interface PublisherOptions {
   /** Default attributes applied to all published messages */
   attributesDefaults?: Record<string, string>;
   /** Function to generate ordering key from message data for ordered delivery */
   orderingKeySelector?: (data: unknown) => string | undefined;
-  // Note: Advanced options like batching and retry will be added in v2.0
-  // to maintain compatibility with the underlying SDK
+  /** SDK retry configuration for failed publish operations */
+  retry?: {
+    /** Initial retry delay in milliseconds (default: 100) */
+    initialDelayMs?: number;
+    /** Maximum retry delay in milliseconds (default: 10000) */
+    maxDelayMs?: number;
+    /** Exponential backoff multiplier (default: 2) */
+    factor?: number;
+    /** Maximum number of retry attempts (default: 5) */
+    maxAttempts?: number;
+  };
+  /** Publisher observability hooks */
+  hooks?: PublisherHooks;
+  /** Enable message ordering for this publisher */
+  enableMessageOrdering?: boolean;
+  /** Batching settings (leverages SDK batching) */
+  batching?: {
+    /** Maximum number of messages in a batch */
+    maxMessages?: number;
+    /** Maximum batch size in bytes */
+    maxBytes?: number;
+    /** Maximum time to wait before sending batch (ms) */
+    maxLatency?: number;
+  };
+}
+
+/**
+ * Publisher hooks for observability and monitoring
+ */
+export interface PublisherHooks {
+  /** Called before attempting to publish a message */
+  onPublishStart?: (data: unknown, attributes: Record<string, string>) => void | Promise<void>;
+  /** Called when publish succeeds */
+  onPublishSuccess?: (messageId: string, data: unknown) => void | Promise<void>;
+  /** Called when publish fails (before retry) */
+  onPublishError?: (error: unknown, data: unknown, attempt: number) => void | Promise<void>;
+  /** Called when a publish retry is attempted */
+  onPublishRetry?: (error: unknown, data: unknown, attempt: number, nextDelay: number) => void | Promise<void>;
+  /** Called when all retries are exhausted */
+  onPublishFailure?: (error: unknown, data: unknown, totalAttempts: number) => void | Promise<void>;
 }
 
 /**
