@@ -1,0 +1,86 @@
+{
+    "name": "@acme/pubsubx",
+    "version": "0.0.0-development",
+    "description": "TypeScript wrapper for Google Cloud Pub/Sub with Redis-backed idempotency",
+    "keywords": [
+        "google-cloud",
+        "pubsub",
+        "typescript",
+        "idempotency",
+        "redis",
+        "nestjs"
+    ],
+    "main": "./dist/index.js",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.js"
+        }
+    },
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE"
+    ],
+    "scripts": {
+        "build": "tsup",
+        "dev": "tsup --watch",
+        "test": "vitest",
+        "test:coverage": "vitest --coverage",
+        "test:ui": "vitest --ui",
+        "lint": "eslint src --ext .ts --fix",
+        "format": "prettier --write src",
+        "typecheck": "tsc --noEmit",
+        "docs": "typedoc",
+        "prepare": "npm run build",
+        "semantic-release": "semantic-release"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/acme/pubsubx.git"
+    },
+    "license": "MIT",
+    "author": {
+        "name": "ACME Team",
+        "email": "team@acme.com"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "dependencies": {
+        "@google-cloud/pubsub": "^4.5.0",
+        "ioredis": "^5.4.1"
+    },
+    "peerDependencies": {
+        "redis": "^4.7.0"
+    },
+    "peerDependenciesMeta": {
+        "redis": {
+            "optional": true
+        }
+    },
+    "devDependencies": {
+        "@types/node": "^20.14.0",
+        "@typescript-eslint/eslint-plugin": "^7.13.0",
+        "@typescript-eslint/parser": "^7.13.0",
+        "@vitest/coverage-v8": "^1.6.0",
+        "@vitest/ui": "^1.6.0",
+        "eslint": "^8.57.0",
+        "eslint-config-prettier": "^9.1.0",
+        "eslint-plugin-prettier": "^5.1.0",
+        "ioredis-mock": "^8.9.0",
+        "prettier": "^3.3.0",
+        "semantic-release": "^23.1.0",
+        "tsup": "^8.1.0",
+        "typedoc": "^0.25.13",
+        "typescript": "^5.4.5",
+        "vitest": "^1.6.0"
+    },
+    "publishConfig": {
+        "access": "public",
+        "provenance": true
+    }
+}
