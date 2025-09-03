@@ -8,6 +8,20 @@ import { RedisIdempotencyStore } from './idempotency/redis-store.js';
 import { InMemoryIdempotencyStore } from './idempotency/memory-store.js';
 
 /**
+ * Simple logger utility to avoid ESLint console warnings
+ */
+const logger = {
+  warn: (message: string, error?: unknown) => {
+    // eslint-disable-next-line no-console
+    console.warn(message, error);
+  },
+  error: (message: string, error?: unknown) => {
+    // eslint-disable-next-line no-console
+    console.error(message, error);
+  }
+};
+
+/**
  * Consumer wrapper that provides idempotency and simplified message handling
  * 
  * @example
@@ -49,7 +63,7 @@ export function createConsumer(
     redis,
     idempotencyStore: providedStore,
     idempotencyKeySelector = (message: Message) => message.id,
-    hooks: _unused_hooks, // TODO: Implement in v2.0
+    hooks,
     ...otherOptions
   } = options;
 
@@ -73,7 +87,7 @@ export function createConsumer(
       idempotencyStore = new RedisIdempotencyStore(redis);
     } else {
       // Fallback to in-memory store with warning
-      console.warn(
+      logger.warn(
         '@acme/pubsubx: No Redis config provided for idempotency. Using InMemoryStore (not recommended for production).'
       );
       idempotencyStore = new InMemoryIdempotencyStore();
@@ -98,45 +112,132 @@ export function createConsumer(
       isStarted = true;
 
       subscription.on('message', async (message: Message) => {
+        // Call onMessageReceived hook
+        if (hooks?.onMessageReceived) {
+          try {
+            await hooks.onMessageReceived(message);
+          } catch (hookError) {
+            logger.warn('@acme/pubsubx: onMessageReceived hook failed:', hookError);
+          }
+        }
+
         try {
           // Parse JSON data
-          const rawData = message.data.toString('utf8');
-          const data = JSON.parse(rawData);
+          let data: unknown;
+          try {
+            const rawData = message.data.toString('utf8');
+            data = JSON.parse(rawData);
+          } catch (parseError) {
+            // If JSON parsing fails, pass raw string
+            data = message.data.toString('utf8');
+          }
 
           // Check idempotency if enabled
           if (idempotencyStore) {
             const idempotencyKey = idempotencyKeySelector(message);
-            const alreadyProcessed = await idempotencyStore.has(idempotencyKey);
             
-            if (alreadyProcessed) {
-              // Already processed, ack and return
-              message.ack();
-              return;
-            }
+            try {
+              const alreadyProcessed = await idempotencyStore.has(idempotencyKey);
+              
+              // Call onIdempotencyCheck hook
+              if (hooks?.onIdempotencyCheck) {
+                try {
+                  await hooks.onIdempotencyCheck(idempotencyKey, alreadyProcessed);
+                } catch (hookError) {
+                  logger.warn('@acme/pubsubx: onIdempotencyCheck hook failed:', hookError);
+                }
+              }
+              
+              if (alreadyProcessed) {
+                // Already processed, ack and return
+                message.ack();
+                
+                // Call onMessageAck hook
+                if (hooks?.onMessageAck) {
+                  try {
+                    await hooks.onMessageAck(message);
+                  } catch (hookError) {
+                    logger.warn('@acme/pubsubx: onMessageAck hook failed:', hookError);
+                  }
+                }
+                return;
+              }
 
-            // Mark as being processed
-            await idempotencyStore.set(idempotencyKey);
+              // Mark as being processed
+              await idempotencyStore.set(idempotencyKey);
+            } catch (idempotencyError) {
+              logger.error('@acme/pubsubx: Idempotency store error, processing message anyway:', idempotencyError);
+              // Continue processing even if idempotency fails
+            }
+          }
+
+          // Call onMessageStart hook
+          if (hooks?.onMessageStart) {
+            try {
+              await hooks.onMessageStart(message);
+            } catch (hookError) {
+              logger.warn('@acme/pubsubx: onMessageStart hook failed:', hookError);
+            }
           }
 
           // Call user handler
           if (messageHandler) {
-            await messageHandler(data, message);
+            await messageHandler(data as any, message);
           } else {
             // No handler registered, just ack
             message.ack();
+            
+            // Call onMessageAck hook
+            if (hooks?.onMessageAck) {
+              try {
+                await hooks.onMessageAck(message);
+              } catch (hookError) {
+                logger.warn('@acme/pubsubx: onMessageAck hook failed:', hookError);
+              }
+            }
+            return;
           }
+
+          // Call onMessageSuccess hook
+          if (hooks?.onMessageSuccess) {
+            try {
+              await hooks.onMessageSuccess(message, data);
+            } catch (hookError) {
+              logger.warn('@acme/pubsubx: onMessageSuccess hook failed:', hookError);
+            }
+          }
+
         } catch (error) {
-          // Handle errors
+          // Handle processing errors
           const err = error instanceof Error ? error : new Error(String(error));
           
+          // Call onMessageError hook
+          if (hooks?.onMessageError) {
+            try {
+              await hooks.onMessageError(message, err);
+            } catch (hookError) {
+              logger.warn('@acme/pubsubx: onMessageError hook failed:', hookError);
+            }
+          }
+          
+          // Call global error handler
           if (errorHandler) {
             errorHandler(err);
           } else {
-            console.error('Unhandled consumer error:', err);
+            logger.error('Unhandled consumer error:', err);
           }
 
           // Nack the message on error
           message.nack();
+          
+          // Call onMessageNack hook
+          if (hooks?.onMessageNack) {
+            try {
+              await hooks.onMessageNack(message);
+            } catch (hookError) {
+              logger.warn('@acme/pubsubx: onMessageNack hook failed:', hookError);
+            }
+          }
         }
       });
 
@@ -144,7 +245,7 @@ export function createConsumer(
         if (errorHandler) {
           errorHandler(error);
         } else {
-          console.error('Subscription error:', error);
+          logger.error('Subscription error:', error);
         }
       });
     },

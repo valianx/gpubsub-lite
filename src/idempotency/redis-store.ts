@@ -6,6 +6,16 @@ import Redis from 'ioredis';
 import type { IdempotencyStore, RedisOptions } from '../types.js';
 
 /**
+ * Simple logger utility to avoid ESLint console warnings
+ */
+const logger = {
+  error: (message: string, error?: unknown) => {
+    // eslint-disable-next-line no-console
+    console.error(message, error);
+  }
+};
+
+/**
  * Production-ready Redis-backed idempotency store
  * 
  * @example
@@ -51,7 +61,7 @@ export class RedisIdempotencyStore implements IdempotencyStore {
       return result === 1;
     } catch (error) {
       // Log error but don't throw - allows fallback behavior
-      console.error('Redis idempotency check failed:', error);
+      logger.error('Redis idempotency check failed:', error);
       return false;
     }
   }
@@ -65,7 +75,7 @@ export class RedisIdempotencyStore implements IdempotencyStore {
       await this.redis.psetex(fullKey, finalTtl, '1');
     } catch (error) {
       // Log error but don't throw - allows graceful degradation
-      console.error('Redis idempotency set failed:', error);
+      logger.error('Redis idempotency set failed:', error);
     }
   }
 
