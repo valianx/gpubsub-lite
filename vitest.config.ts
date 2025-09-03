@@ -4,6 +4,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    // Force ESM mode to avoid CJS deprecation warnings
+    pool: 'forks',
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -31,5 +33,9 @@ export default defineConfig({
     alias: {
       '@': new URL('./src', import.meta.url).pathname
     }
+  },
+  // Ensure we're using ESM
+  esbuild: {
+    target: 'node18'
   }
 });

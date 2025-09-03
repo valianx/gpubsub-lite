@@ -1,5 +1,5 @@
 // Test setup file for Vitest
-import { vi } from 'vitest';
+import { vi, afterEach } from 'vitest';
 
 // Mock console methods for tests
 global.console = {
@@ -9,9 +9,6 @@ global.console = {
   debug: vi.fn(),
   info: vi.fn(),
 };
-
-// Setup fake timers
-vi.useFakeTimers();
 
 // Cleanup after each test (globals enabled in vitest.config.ts)
 afterEach(() => {

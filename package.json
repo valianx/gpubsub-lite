@@ -2,6 +2,7 @@
     "name": "@acme/pubsubx",
     "version": "0.0.0-development",
     "description": "TypeScript wrapper for Google Cloud Pub/Sub with Redis-backed idempotency",
+    "type": "module",
     "keywords": [
         "google-cloud",
         "pubsub",
